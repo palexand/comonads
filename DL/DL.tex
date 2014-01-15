@@ -1,0 +1,296 @@
+\documentclass[10pt]{article}
+
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+\makeatletter
+
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+\newlength{\lwidth}\setlength{\lwidth}{4.5cm}
+\newlength{\cwidth}\setlength{\cwidth}{8mm} % 3mm
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\makeatother
+
+\usepackage{fullpage}
+\usepackage{alltt}
+
+\bibliographystyle{plain}
+
+\parskip=\medskipamount
+\parindent=0pt
+
+\title{Constructing a Comonadic Stream Processor Using
+  InterpreterLib:\\ Putting the pieces together}
+
+\author{\emph{Uk'taad B'mal} \\
+  The University of Kansas - ITTC \\
+  2335 Irving Hill Rd, Lawrence, KS 66045 \\
+  \texttt{lambda@ittc.ku.edu}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  Abstract goes here...
+\end{abstract}
+
+\section{Introduction}
+
+What we do in this report is take all of our interpreter pieces and
+put them together to write a stream transformer.  First we define a
+simple expression language that supports lambda abstraction,
+conditionals, Booleans and integers.  This language is in every way
+identical to earlier languages written with \ensuremath{\Conid{InterpreterLib}}.  It is
+modular and monadic in nature.  We will extend the abstract syntax
+elements from \ensuremath{\Conid{InterpreterLib}} to include an \ensuremath{\Varid{fby}} operation defining
+the dataflow concept of ``followed by''.  To interpret \ensuremath{\Varid{fby}}, we must
+introduce data flow semantics.  We choose to do this using a comonad
+as defined by Uustalu and Vene~\cite{Uustalu:05:The-Essence-of-}.  In
+effect, we are taking a simple lambda language and inserting it into a
+comonad to create a stream transformer.
+
+If we take this new stream transformer and evaluate it using the \ensuremath{\Conid{Id}}
+comonad, the resulting system is simply the original interpreter.  The
+\ensuremath{\Conid{Id}} comonad has no concept of past or future and thus processes a
+single value stream.
+
+Moving to the \ensuremath{\Conid{LV}} or \ensuremath{\Conid{Causal}} comonad allows us to record the past as
+stream elements are processes.  Specifically, the \ensuremath{\Conid{LV}} comonad accepts
+an input stream and produces a list representing past values.  This is
+in effect a discrete event simulator where the events are input from
+the input stream.
+
+Finally, moving to the \ensuremath{\Conid{LVS}} comonad allows us to move backwards and
+forwards along the input and output streams.  \ensuremath{\Conid{LVS}} gives us a
+simulator that allows stopping, reversing and restarting during
+execution.
+
+The ultimate question has to be why we care about this.  In a way, we
+have created the ultimate in modular interpreter by introducing
+temporal events.  The ordering of events in the input stream defines
+the temporal flow of the resulting simulator.  \ensuremath{\Conid{Id}} gives us an
+interpreter because there is no temporal orderin.  \ensuremath{\Conid{LV}} gives us
+causal simulation because we only move forward through the input
+stream.  \ensuremath{\Conid{LVS}} gives us both backward and forward reference providing
+the most flexible temporal model.  All this \emph{without changing the
+interpreter}.  We can change the time reference, explore branching
+time, or eliminate time altogether by changing the comonad use for
+evaluation or by changing the nature of the input stream.  Thus, we
+have created a siulator where time is simply one aspect of the
+composable interpreter like any other.
+
+\section{Imports and Options}
+
+The interpreter imports virtually everything we have written to
+support interpreter construction.  First the \ensuremath{\Conid{InterpreterLib}} package
+is loaded along with terms used in our abstract syntax.  Note the
+import of \ensuremath{\Conid{Causal}}, a new module providing the \ensuremath{\Conid{Fby}} expression
+syntax.  The \ensuremath{\Conid{Comonad}} packages are then loaded to construct the
+comonad that sequences interpretation.  Finally, the \ensuremath{\Conid{Monad}} modules
+are loaded to construct the interpreter monadically.
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\mathbf{module}\;\Conid{DL}\;\mathbf{where}}$\\
+${}$\\
+${\mbox{\enskip\{-\# OPTIONS -fglasgow-exts -fno-monomorphism-restriction -fallow-overlapping-instances  \#-\}\enskip}}$\\
+${}$\\
+${\mathbf{import}\;\Conid{\Conid{InterpreterLib}.Algebras}}$\\
+${\mathbf{import}\;\Conid{\Conid{InterpreterLib}.Functors}}$\\
+${\mathbf{import}\;\Conid{\Conid{InterpreterLib}.SubType}}$\\
+${}$\\
+${\mathbf{import}\;\Conid{\Conid{InterpreterLib}.\Conid{Terms}.Arith}}$\\
+${\mathbf{import}\;\Conid{\Conid{InterpreterLib}.\Conid{Terms}.LambdaTerm}}$\\
+${\mathbf{import}\;\Conid{\Conid{InterpreterLib}.\Conid{Terms}.FixTerm}}$\\
+${\mathbf{import}\;\Conid{\Conid{InterpreterLib}.\Conid{Terms}.IfTerm}}$\\
+${}$\\
+${\mathbf{import}\;\Conid{Causal}}$\\
+${}$\\
+${\mathbf{import}\;\Conid{Comonad}}$\\
+${\mathbf{import}\;\Conid{\Conid{Comonad}.LV}}$\\
+${\mathbf{import}\;\Conid{\Conid{Comonad}.LVS}}$\\
+${\mathbf{import}\;\Conid{\Conid{Comonad}.Stream}}$\\
+${}$\\
+${\mathbf{import}\;\Conid{\Conid{Control}.Monad}}$\\
+${\mathbf{import}\;\Conid{\Conid{Control}.\Conid{Monad}.Reader}}$
+\end{tabbing}
+\section{Term Space}
+
+The term language is a trivial language with the addition of a data
+flow construct.  The first five term types define a trivial lambda
+language.  (See earlier documentation of \ensuremath{\Conid{InterpreterLib}} if this is
+confusing.)  The final term adds the followed by syntax to support
+moving interpretation through time.  As usual, the full language is
+the fixed point of the non-recursive AST structure.
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\mathbf{type}\;\Conid{TermType}\mathrel{=}(\Conid{LambdaTerm}\;())\mathbin{:\$:}}$\\
+${\phantom{\mathbf{type}\;\Conid{TermType}\mathrel{=}\mbox{}}\Conid{VarTerm}\mathbin{:\$:}}$\\
+${\phantom{\mathbf{type}\;\Conid{TermType}\mathrel{=}\mbox{}}\Conid{FixTerm}\mathbin{:\$:}}$\\
+${\phantom{\mathbf{type}\;\Conid{TermType}\mathrel{=}\mbox{}}\Conid{ArithTerm}\mathbin{:\$:}}$\\
+${\phantom{\mathbf{type}\;\Conid{TermType}\mathrel{=}\mbox{}}\Conid{IfTerm}\mathbin{:\$:}}$\\
+${\phantom{\mathbf{type}\;\Conid{TermType}\mathrel{=}\mbox{}}\Conid{Causal}}$\\
+${}$\\
+${\mathbf{type}\;\Conid{TermLang}\mathrel{=}\Conid{Fix}\;\Conid{TermType}}$
+\end{tabbing}
+\section{Value Space}
+
+The value space of tis interpreter includes integers, booleans and
+lambdas.  There is no need for a non-recursive representation here.
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\mathbf{data}\;\Conid{Val}}$\\
+${\hskip1.00em\relax\mathrel{=}\Conid{I}\;\Conid{Int}}$\\
+${\hskip1.00em\relax\mid \Conid{B}\;\Conid{Bool}}$\\
+${\hskip1.00em\relax\mid \Conid{F}\;(\Conid{LV}\;\Conid{Val}\to \Conid{VSpace}\;\Conid{Val})}$\\
+${}$\\
+${\mathbf{instance}\;\Conid{Show}\;\Conid{Val}\;\mathbf{where}}$\\
+${\hskip2.00em\relax\Varid{show}\;(\Conid{I}\;\Varid{i})\mathrel{=}\Varid{show}\;\Varid{i}}$\\
+${\hskip2.00em\relax\Varid{show}\;(\Conid{B}\;\Varid{b})\mathrel{=}\Varid{show}\;\Varid{b}}$\\
+${\hskip2.00em\relax\Varid{show}\;(\Conid{F}\;\anonymous )\mathrel{=}\text{\tt \char34 <function~value>\char34}}$\\
+${\lambda \Varid{enb}\{\mskip1.5mu \Varid{code}\mskip1.5mu\}}$\\
+${}$\\
+${\lambda \Varid{section}\{\mskip1.5mu \Conid{Environment}\mskip1.5mu\}}$\\
+${}$\\
+${\Conid{The}\;\Varid{environment}\;\mathbf{of}\;\Varid{this}\;\Varid{interpreter}\;\Varid{is}\mathbin{...}}$\\
+${}$\\
+${\lambda \Varid{begin}\{\mskip1.5mu \Varid{code}\mskip1.5mu\}}$\\
+${\mathbf{type}\;\Conid{VSpace}\mathrel{=}\Conid{Reader}\;(\Conid{LV}\;\Conid{Env})}$\\
+${\mathbf{newtype}\;\Conid{Env}\mathrel{=}\Conid{Env}\;[\mskip1.5mu (\Conid{String},\Conid{VSpace}\;\Conid{Val})\mskip1.5mu]}$\\
+${\Varid{runVSpace}\mathrel{=}\Varid{runReader}}$
+\end{tabbing}
+\section{The Semantic Algebra}
+
+At this point we defined the explicit semantic algebra used by the
+intepreter.  Functions for each language construct are defined first
+and then assembpled into the explicit algebra.
+
+\subsection{Lambda Evaluation}
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\Varid{phiLam}\;(\Conid{Lam}\;\Varid{v}\;()\;\Varid{t})\mathrel{=}}$\\
+${\hskip2.00em\relax\mathbf{do}\;\Varid{denv}\leftarrow \Varid{ask}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\mathbf{let}\;\Varid{repair}\;(\Varid{a},\Conid{Env}\;\Varid{env})\mathrel{=}\Conid{Env}\mathbin{\$}(\Varid{v},\Varid{return}\;\Varid{a})\mathbin{:}\Varid{env}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\phantom{\mathbf{let}\;\mbox{}}\Varid{extendDenv}\;\Varid{d}\mathrel{=}\Varid{cmap}\;\Varid{repair}\;(\Varid{czip}\;\Varid{d}\;\Varid{denv})}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\Varid{return}\mathbin{\$}\Conid{F}\;(\lambda \Varid{d}\to \Varid{local}\;(\Varid{const}\;(\Varid{extendDenv}\;\Varid{d}))\;\Varid{t})}$\\
+${}$\\
+${\Varid{phiLam}\;(\Conid{App}\;\Varid{t1}\;\Varid{t2})\mathrel{=}}$\\
+${\hskip2.00em\relax\mathbf{do}\;\Varid{denv}\leftarrow \Varid{ask}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}(\Conid{F}\;\Varid{f})\leftarrow \Varid{t1}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\Varid{f}\mathbin{\$}\Varid{cobind}\;(\Varid{runVSpace}\;\Varid{t2})\;\Varid{denv}}$
+\end{tabbing}
+\subsection{Fixed Point Evaluation}
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\Varid{phiFix}\;\Varid{tm}\mathord{@}(\Conid{FixTerm}\;\Varid{t})\mathrel{=}}$\\
+${\hskip2.00em\relax\mathbf{do}\;\Varid{denv}\leftarrow \Varid{ask}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}(\Conid{F}\;\Varid{f})\leftarrow \Varid{t}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\Varid{f}\mathbin{\$}\Varid{cobind}\;(\Varid{runVSpace}\;(\Varid{phiFix}\;\Varid{tm}))\;\Varid{denv}}$
+\end{tabbing}
+\subsection{Variable Evaluation}
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\Varid{phiVar}\mathbin{::}(\Conid{VarTerm}\;(\Conid{VSpace}\;\Conid{Val}))\to (\Conid{VSpace}\;\Conid{Val})}$\\
+${\Varid{phiVar}\;(\Conid{VarTerm}\;\Varid{v})\mathrel{=}}$\\
+${\hskip2.00em\relax\mathbf{do}\;\mathbf{let}\;\Varid{unJust}\;(\Conid{Just}\;\Varid{x})\mathrel{=}\Varid{x}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mathbf{let}\;\mbox{}}\Varid{get}\;(\Conid{Env}\;\Varid{env})\mathrel{=}\Varid{unJust}\mathbin{\$}\Varid{lookup}\;\Varid{v}\;\Varid{env}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\mbox{\qquad-{}-  asks (get . counit)}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\Varid{denv}\leftarrow \Varid{ask}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\Varid{get}\;(\Varid{counit}\;\Varid{denv})}$\\
+${}$\\
+${}$\\
+${\Varid{lift2Int2}\;\Varid{op}\;(\Conid{I}\;\Varid{x})\;(\Conid{I}\;\Varid{y})\mathrel{=}\Conid{I}\mathbin{\$}\Varid{x}\mathbin{`\Varid{op}`}\Varid{y}}$\\
+${}$\\
+${\Varid{lift2Int2Bool2}\;\Varid{op}\;(\Conid{I}\;\Varid{x})\;(\Conid{I}\;\Varid{y})\mathrel{=}\Conid{B}\mathbin{\$}\Varid{x}\mathbin{`\Varid{op}`}\Varid{y}}$
+\end{tabbing}
+\subsection{Arithmetic Expression Evaluation}
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\Varid{phiArith}\;(\Conid{Add}\;\Varid{x}\;\Varid{y})\mathrel{=}\Varid{liftM2}\;(\Varid{lift2Int2}\;(\mathbin{+}))\;\Varid{x}\;\Varid{y}}$\\
+${\Varid{phiArith}\;(\Conid{Sub}\;\Varid{x}\;\Varid{y})\mathrel{=}\Varid{liftM2}\;(\Varid{lift2Int2}\;(\mathbin{-}))\;\Varid{x}\;\Varid{y}}$\\
+${\Varid{phiArith}\;(\Conid{Mult}\;\Varid{x}\;\Varid{y})\mathrel{=}\Varid{liftM2}\;(\Varid{lift2Int2}\;(\mathbin{*}))\;\Varid{x}\;\Varid{y}}$\\
+${\Varid{phiArith}\;(\Conid{Div}\;\Varid{x}\;\Varid{y})\mathrel{=}\Varid{liftM2}\;(\Varid{lift2Int2}\;\Varid{div})\;\Varid{x}\;\Varid{y}}$\\
+${\Varid{phiArith}\;(\Conid{NumEq}\;\Varid{x}\;\Varid{y})\mathrel{=}\Varid{liftM2}\;(\Varid{lift2Int2Bool2}\;(\equiv ))\;\Varid{x}\;\Varid{y}}$\\
+${\Varid{phiArith}\;(\Conid{Num}\;\Varid{i})\mathrel{=}\Varid{return}\mathbin{\$}\Conid{I}\;\Varid{i}}$
+\end{tabbing}
+\subsection{IF Term Evaluation}
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\Varid{phiIf}\;(\Conid{IfTerm}\;\Varid{b}\;\Varid{t}\;\Varid{f})\mathrel{=}}$\\
+${\hskip2.00em\relax\mathbf{do}\;\Varid{denv}\leftarrow \Varid{ask}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}(\Conid{B}\;\Varid{b'})\leftarrow \Varid{b}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\mathbf{if}\;\Varid{b'}\;\mathbf{then}\;\Varid{t}\;\mathbf{else}\;\Varid{f}}$\\
+${}$\\
+${\Varid{phiIf}\;\Conid{TrueTerm}\mathrel{=}\Varid{return}\;(\Conid{B}\;\Conid{True})}$\\
+${\Varid{phiIf}\;\Conid{FalseTerm}\mathrel{=}\Varid{return}\;(\Conid{B}\;\Conid{False})}$
+\end{tabbing}
+\subsection{Followed By Evaluation}
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\Varid{phiCausal}\;(\Conid{FBy}\;\Varid{t1}\;\Varid{t2})\mathrel{=}}$\\
+${\hskip2.00em\relax\mathbf{do}\;\Varid{denv}\leftarrow \Varid{ask}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\Varid{v1}\leftarrow \Varid{t1}}$\\
+${\hskip2.00em\relax\phantom{\mathbf{do}\;\mbox{}}\Varid{return}\mathbin{\$}\Varid{v1}\mathbin{`\Varid{fbyLV}`}\Varid{cobind}\;(\Varid{runVSpace}\;\Varid{t2})\;\Varid{denv}}$
+\end{tabbing}
+\subsection{Forming The Semantic Algebra}
+
+\begin{tabbing}
+\qquad\=\hspace{\lwidth}\=\hspace{\cwidth}\=\+\kill
+${\Varid{alg}\mathrel{=}(\Varid{mkAlgebra}\;\Varid{phiLam})\mathbin{@+@}}$\\
+${\phantom{\Varid{alg}\mathrel{=}\mbox{}}(\Varid{mkAlgebra}\;\Varid{phiVar})\mathbin{@+@}}$\\
+${\phantom{\Varid{alg}\mathrel{=}\mbox{}}(\Varid{mkAlgebra}\;\Varid{phiFix})\mathbin{@+@}}$\\
+${\phantom{\Varid{alg}\mathrel{=}\mbox{}}(\Varid{mkAlgebra}\;\Varid{phiArith})\mathbin{@+@}}$\\
+${\phantom{\Varid{alg}\mathrel{=}\mbox{}}(\Varid{mkAlgebra}\;\Varid{phiIf})\mathbin{@+@}}$\\
+${\phantom{\Varid{alg}\mathrel{=}\mbox{}}(\Varid{mkAlgebra}\;\Varid{phiCausal})}$\\
+${}$\\
+${}$\\
+${\Varid{emptyS}\mathrel{=}(\Conid{Env}\;[\mskip1.5mu \mskip1.5mu])\mathbin{:<}\Varid{emptyS}}$\\
+${}$\\
+${\Varid{eval}\;\Varid{tm}\mathrel{=}\Varid{runLV}\;(\Varid{runVSpace}\;(\Varid{cata}\;\Varid{alg}\;\Varid{tm}))\;\Varid{emptyS}}$\\
+${}$\\
+${}$\\
+${\Varid{pos}\mathbin{::}\Conid{TermLang}}$\\
+${\Varid{pos}\mathrel{=}\Varid{makeFixTerm}\;(\Varid{makeLam}\;\text{\tt \char34 pos\char34}\;()\;((\Varid{makeNum}\;\mathrm{0})\mathbin{`\Varid{makeFBy}`}((\Varid{makeVarTerm}\;\text{\tt \char34 pos\char34})\mathbin{`\Varid{makeAdd}`}(\Varid{makeNum}\;\mathrm{1}))))}$
+\end{tabbing}
+\bibliography{sldg}
+
+\end{document}

@@ -1,0 +1,5 @@
+language Causal where
+
+signature Causal = FBy * *
+
+signature AntiCausal = Next *
