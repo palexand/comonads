@@ -1,0 +1,585 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8"
+><TITLE
+>Comonad.LVS</TITLE
+><LINK HREF="haddock.css" REL="stylesheet" TYPE="text/css"
+><SCRIPT SRC="haddock.js" TYPE="text/javascript"
+></SCRIPT
+></HEAD
+><BODY
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="topbar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><IMG SRC="haskell_icon.gif" WIDTH="16" HEIGHT="16" ALT=" "
+></TD
+><TD CLASS="title"
+>ml</TD
+><TD CLASS="topbut"
+><A HREF="index.html"
+>Contents</A
+></TD
+><TD CLASS="topbut"
+><A HREF="doc-index.html"
+>Index</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="modulebar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><FONT SIZE="6"
+>Comonad.LVS</FONT
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Description</TD
+></TR
+><TR
+><TD CLASS="doc"
+>LVS comonad based on the presentation of T. Uustalu and V. Vene
+ |<A HREF="The Essence of Dataflow Programming.html"
+>The Essence of Dataflow Programming</A
+>.  Note that List in the
+ |original presentation is replaced by <TT
+><A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+></TT
+> to disambiguate from
+ |standard Haskell List.  The constructor :| has been replaced by :!
+ |due to issues with lhs2TeX.
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Synopsis</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3APast"
+>Past</A
+> a</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+>= <A HREF="#v%3ANil"
+>Nil</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>| <A HREF="#v%3A%3A%3E"
+>(:&gt;)</A
+> (<A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> a) a</TD
+></TR
+></TABLE
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3ALV"
+>LV</A
+> a = <A HREF="#v%3A%3A%3D"
+>(:=)</A
+> (<A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> a) a</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3ALVS"
+>LVS</A
+> a = <A HREF="#v%3A%3A%21"
+>(:!)</A
+> (<A HREF="Comonad-LVS.html#t%3ALV"
+>LV</A
+> a) (<A HREF="Comonad-Stream.html#t%3AStream"
+>Stream</A
+> a)</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3ArunLVS"
+>runLVS</A
+> :: (<A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+> a -&gt; b) -&gt; <A HREF="Comonad-Stream.html#t%3AStream"
+>Stream</A
+> a -&gt; <A HREF="Comonad-Stream.html#t%3AStream"
+>Stream</A
+> b</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AfbyLVS"
+>fbyLVS</A
+> :: a -&gt; <A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+> a -&gt; a</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AnextLVS"
+>nextLVS</A
+> :: <A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+> a -&gt; a</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AshowLVS"
+>showLVS</A
+> :: Show a =&gt; <A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+> a -&gt; IO ()</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AzipP"
+>zipP</A
+> :: <A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> a -&gt; <A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> b -&gt; <A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> (a, b)</TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Documentation</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3APast"
+></A
+><B
+>Past</B
+> a</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>Past is essentially a list where cons adds to the end rather than
+ |the beginning.
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+>Constructors</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="arg"
+><A NAME="v%3ANil"
+></A
+><B
+>Nil</B
+></TD
+><TD CLASS="rdoc"
+></TD
+></TR
+><TR
+><TD CLASS="arg"
+><A NAME="v%3A%3A%3E"
+></A
+><B
+>(:&gt;)</B
+> (<A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> a) a</TD
+><TD CLASS="rdoc"
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:Past')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:Past" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+>Show a =&gt; Show (<A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> a)</TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3ALV"
+></A
+><B
+>LV</B
+> a</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>LV is a value composed with a <TT
+><A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+></TT
+> representing stream
+ |transformations that have been performed.  It's okay that <TT
+><A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+></TT
+> is
+ |finite because it represents what we have seen so far.
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+>Constructors</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="arg"
+><A NAME="v%3A%3A%3D"
+></A
+><B
+>(:=)</B
+> (<A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> a) a</TD
+><TD CLASS="rdoc"
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:LV')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:LV" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><A HREF="Comonad.html#t%3AComonad"
+>Comonad</A
+> <A HREF="Comonad-LVS.html#t%3ALV"
+>LV</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="Comonad.html#t%3AComonadZip"
+>ComonadZip</A
+> <A HREF="Comonad-LVS.html#t%3ALV"
+>LV</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3ALVS"
+></A
+><B
+>LVS</B
+> a</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>LVS is an LV comonad with a <TT
+><A HREF="Comonad-Stream.html#t%3AStream"
+>Stream</A
+></TT
+> representing future stream
+ |transformations in addition to past stream transformations.  The
+ |future must be a <TT
+><A HREF="Comonad-Stream.html#t%3AStream"
+>Stream</A
+></TT
+> because we don't have an oracle to tell us
+ |how long the system will run.
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+>Constructors</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="arg"
+><A NAME="v%3A%3A%21"
+></A
+><B
+>(:!)</B
+> (<A HREF="Comonad-LVS.html#t%3ALV"
+>LV</A
+> a) (<A HREF="Comonad-Stream.html#t%3AStream"
+>Stream</A
+> a)</TD
+><TD CLASS="rdoc"
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:LVS')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:LVS" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><A HREF="Comonad.html#t%3AComonad"
+>Comonad</A
+> <A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="Comonad.html#t%3AComonadZip"
+>ComonadZip</A
+> <A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3ArunLVS"
+></A
+><B
+>runLVS</B
+> :: (<A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+> a -&gt; b) -&gt; <A HREF="Comonad-Stream.html#t%3AStream"
+>Stream</A
+> a -&gt; <A HREF="Comonad-Stream.html#t%3AStream"
+>Stream</A
+> b</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AfbyLVS"
+></A
+><B
+>fbyLVS</B
+> :: a -&gt; <A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+> a -&gt; a</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AnextLVS"
+></A
+><B
+>nextLVS</B
+> :: <A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+> a -&gt; a</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AshowLVS"
+></A
+><B
+>showLVS</B
+> :: Show a =&gt; <A HREF="Comonad-LVS.html#t%3ALVS"
+>LVS</A
+> a -&gt; IO ()</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AzipP"
+></A
+><B
+>zipP</B
+> :: <A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> a -&gt; <A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> b -&gt; <A HREF="Comonad-LVS.html#t%3APast"
+>Past</A
+> (a, b)</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="botbar"
+>Produced by <A HREF="http://www.haskell.org/haddock/"
+>Haddock</A
+> version 0.7</TD
+></TR
+></TABLE
+></BODY
+></HTML
+>
